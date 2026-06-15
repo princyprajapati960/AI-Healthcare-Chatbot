@@ -1,0 +1,36 @@
+symptoms,department
+chest pain and shortness of breath,Cardiology
+heart palpitations and chest discomfort,Cardiology
+high blood pressure and dizziness,Cardiology
+severe headache and vision problems,Neurology
+migraine with nausea,Neurology
+seizure and loss of consciousness,Neurology
+numbness in arms and slurred speech,Neurology
+fever and body ache,General Medicine
+cough cold and sore throat,General Medicine
+fatigue and weakness,General Medicine
+stomach pain and vomiting,General Medicine
+diabetes symptoms increased thirst,General Medicine
+skin rash and itching,Dermatology
+acne and skin inflammation,Dermatology
+eczema flare up,Dermatology
+allergic skin reaction,Dermatology
+joint pain and swelling,Orthopedics
+back pain and stiffness,Orthopedics
+knee injury and pain,Orthopedics
+fracture and bone pain,Orthopedics
+blurred vision and eye pain,Ophthalmology
+red eyes and discharge,Ophthalmology
+ear pain and hearing loss,ENT
+sinus congestion and ear pressure,ENT
+sore throat and earache,ENT
+anxiety and panic attacks,Psychiatry
+depression and sleep problems,Psychiatry
+chest burn and acid reflux,Gastroenterology
+abdominal bloating and diarrhea,Gastroenterology
+blood in urine and painful urination,Urology
+frequent urination and burning,Urology
+pregnancy related nausea,Obstetrics
+menstrual irregularities,Gynecology
+child fever and rash,Pediatrics
+child cough and wheezing,Pediatrics
