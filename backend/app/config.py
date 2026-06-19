@@ -23,5 +23,14 @@ class Settings(BaseSettings):
     app_name: str = "MediVoice AI"
     debug: bool = True
 
+    # Redis Configuration
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str = ""
+    redis_max_connections: int = 50
+    redis_socket_timeout: int = 5
+    redis_socket_connect_timeout: int = 5
+
 
 settings = Settings()

@@ -22,5 +22,11 @@ def get_db():
 
 def init_db():
     from backend.app.models import schemas_db  # noqa: F401
+    
+    # Import enhanced schemas for medical knowledge base and audit logging
+    try:
+        from backend.app.models import enhanced_schemas  # noqa: F401
+    except ImportError:
+        pass  # Enhanced schemas only available with PostgreSQL
 
     Base.metadata.create_all(bind=engine)
