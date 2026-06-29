@@ -46,7 +46,6 @@ services:
   - type: web
     name: medivoice-frontend
     env: static
-    region: oregon
     plan: free
     buildCommand: |
       cd frontend
@@ -66,4 +65,5 @@ services:
     name: medivoice-redis
     region: oregon
     plan: free
+    ipAllowList: []
     maxmemoryPolicy: allkeys-lru
