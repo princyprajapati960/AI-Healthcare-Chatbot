@@ -42,6 +42,7 @@ class CacheManager:
         """Initialize Redis connection pool."""
         self._pool: Optional[ConnectionPool] = None
         self._redis: Optional[aioredis.Redis] = None
+        self._connected: bool = False
         self._stats = {
             "hits": 0,
             "misses": 0,
@@ -52,45 +53,39 @@ class CacheManager:
     async def connect(self):
         """
         Establish Redis connection with connection pooling.
-        
-        Connection pool configuration:
-        - max_connections: 50 (configurable via settings)
-        - socket_timeout: 5 seconds
-        - socket_connect_timeout: 5 seconds
-        - decode_responses: False (handle binary data)
+        Gracefully degrades if Redis is unavailable.
         """
         if self._pool is None:
-            self._pool = ConnectionPool(
-                host=settings.redis_host,
-                port=settings.redis_port,
-                db=settings.redis_db,
-                password=settings.redis_password if settings.redis_password else None,
-                max_connections=settings.redis_max_connections,
-                socket_timeout=settings.redis_socket_timeout,
-                socket_connect_timeout=settings.redis_socket_connect_timeout,
-                decode_responses=False,  # Handle binary data
-                health_check_interval=30  # Check connection health every 30 seconds
-            )
-            self._redis = aioredis.Redis(connection_pool=self._pool)
-            
-            # Verify connection
             try:
+                self._pool = ConnectionPool(
+                    host=settings.redis_host,
+                    port=settings.redis_port,
+                    db=settings.redis_db,
+                    password=settings.redis_password if settings.redis_password else None,
+                    max_connections=settings.redis_max_connections,
+                    socket_timeout=settings.redis_socket_timeout,
+                    socket_connect_timeout=settings.redis_socket_connect_timeout,
+                    decode_responses=False,
+                    health_check_interval=30
+                )
+                self._redis = aioredis.Redis(connection_pool=self._pool)
+                
                 await self._redis.ping()
+                self._connected = True
                 logger.info(f"Redis connected successfully to {settings.redis_host}:{settings.redis_port}")
                 
-                # Log Redis configuration
-                config_info = await self._redis.config_get("maxmemory", "maxmemory-policy")
-                logger.info(f"Redis configuration: {config_info}")
-                
             except Exception as e:
-                logger.error(f"Failed to connect to Redis: {e}")
-                raise
+                logger.warning(f"Redis unavailable, running without cache: {e}")
+                self._pool = None
+                self._redis = None
+                self._connected = False
     
     async def disconnect(self):
         """Close Redis connection pool gracefully."""
         if self._redis:
             await self._redis.close()
             logger.info("Redis connection closed")
+        self._connected = False
         if self._pool:
             await self._pool.disconnect()
             self._pool = None
@@ -106,14 +101,14 @@ class CacheManager:
         Returns:
             Cached value (deserialized from JSON) or None if not found
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            self._stats["misses"] += 1
+            return None
         
         try:
             value = await self._redis.get(key)
             if value:
                 self._stats["hits"] += 1
-                # Deserialize JSON
                 return json.loads(value.decode('utf-8'))
             else:
                 self._stats["misses"] += 1
@@ -132,8 +127,8 @@ class CacheManager:
             value: Value to cache (will be serialized to JSON)
             ttl: Time-to-live in seconds
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            return
         
         try:
             # Serialize to JSON
@@ -154,8 +149,8 @@ class CacheManager:
         Returns:
             Number of keys deleted
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            return 0
         
         try:
             # Find matching keys
@@ -191,8 +186,8 @@ class CacheManager:
             - hit_rate: Cache hit rate percentage
             - redis_info: Redis server info
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            return {**self._stats, "hit_rate": 0, "status": "disconnected"}
         
         total_requests = self._stats["hits"] + self._stats["misses"]
         hit_rate = (self._stats["hits"] / total_requests * 100) if total_requests > 0 else 0
@@ -235,8 +230,8 @@ class CacheManager:
         Returns:
             True if key exists, False otherwise
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            return False
         
         try:
             return await self._redis.exists(key) > 0
@@ -254,8 +249,8 @@ class CacheManager:
         Returns:
             True if key was deleted, False otherwise
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            return False
         
         try:
             result = await self._redis.delete(key)
@@ -274,8 +269,8 @@ class CacheManager:
         Returns:
             Remaining TTL in seconds, -1 if no TTL, -2 if key doesn't exist
         """
-        if not self._redis:
-            await self.connect()
+        if not self._connected:
+            return -2
         
         try:
             return await self._redis.ttl(key)
