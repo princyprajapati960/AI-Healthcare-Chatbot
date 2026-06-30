@@ -22,7 +22,7 @@ def train_and_save() -> Pipeline:
     pipeline = Pipeline(
         [
             ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=1, stop_words="english")),
-            ("clf", LogisticRegression(max_iter=1000, multi_class="multinomial")),
+            ("clf", LogisticRegression(max_iter=1000)),
         ]
     )
     pipeline.fit(df["symptoms"], df["department"])
